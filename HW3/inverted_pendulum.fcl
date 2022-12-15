@@ -1,0 +1,62 @@
+FUNCTION_BLOCK Inverted_Pendulum
+
+    VAR_INPUT
+        theta : REAL;
+        theta_dot : REAL;
+    END_VAR
+
+    VAR_OUTPUT
+        F : REAL;
+    END_VAR
+
+    FUZZIFY theta
+        TERM Far_Left := (270, 0) (360, 1);
+        TERM Left := (180,0) (195,1) (215,0);
+        TERM Center := (170,0) (180,1) (190,0);
+        TERM Right := (145,0) (160,1) (180,0);
+        TERM Far_Right := (0, 1) (90, 0);
+    END_FUZZIFY
+
+    FUZZIFY theta_dot
+        TERM cc_v3 := (3,0) (7,1);
+        TERM cc_v2 := (1,0) (3,1) (5,0);
+        TERM cc_v1 := (0.3,0) (1,1) (3.5,0);
+        TERM stop := (-0.5,0) (0,1) (0.5,0);
+        TERM c_v1 := (-3.5,0) (-1,1) (-0.3,0);
+        TERM c_v2 := (-5,0) (-3,1) (-1,0);
+        TERM c_v3 := (-7,1) (-3,0);
+    END_FUZZIFY
+
+    DEFUZZIFY F
+        TERM Letf_SpeedV4 := (-83,0) (-80,1) (-53,0);
+        TERM Letf_SpeedV3 := (-65,0) (-54,1) (-28,0);
+        TERM Letf_SpeedV2 := (-55,0) (-26,1) (-17,0);
+        TERM Letf_SpeedV1 := (-20,0) (-8,1) (0,0);
+        TERM Stop := (0,0) (0,0) (0,0);
+        TERM Right_SpeedV1 := (0,0) (8,1) (20,0);
+        TERM Right_SpeedV2 := (17,0) (26,1) (55,0);
+        TERM Right_SpeedV3 := (28,0) (54,1) (65,0);
+        TERM Right_SpeedV4 := (53,0) (80,1) (83,0);
+        ACCU : MAX;
+        METHOD : COG;
+        DEFAULT := 0;
+    END_DEFUZZIFY
+
+    RULEBLOCK Inverted_Pendulum
+        AND : AlgebraicProduct;
+        OR : MAX;
+
+        RULE 1 : IF theta IS Far_Right AND (theta_dot IS c_v1 OR theta_dot IS c_v2) THEN F IS Right_SpeedV2;
+        RULE 2 : IF theta IS Center AND theta_dot IS cc_v1 THEN F IS Letf_SpeedV2;
+        RULE 3 : IF theta IS Center AND theta_dot IS c_v3 THEN F IS Right_SpeedV4;
+        RULE 4 : IF theta IS Far_Left AND (theta_dot IS cc_v1 OR theta_dot IS cc_v2)  THEN F IS Letf_SpeedV2;
+        RULE 5 : IF theta IS Center AND theta_dot IS cc_v3 THEN F IS Letf_SpeedV4;
+        RULE 6 : IF theta IS Center AND theta_dot IS cc_v2 THEN F IS Letf_SpeedV3;
+        RULE 7 : IF theta IS Right THEN F IS Right_SpeedV2;
+        RULE 8 : IF theta IS Center AND theta_dot IS c_v1 THEN F IS Right_SpeedV2;
+        RULE 9 : IF theta IS Left THEN F IS Letf_SpeedV2;
+        RULE 10 : IF theta IS Center AND theta_dot IS c_v2 THEN F IS Right_SpeedV3;
+
+    END_RULEBLOCK
+
+END_FUNCTION_BLOCK
